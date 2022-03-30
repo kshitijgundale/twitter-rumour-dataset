@@ -8,7 +8,7 @@ REQUIREMENTS = [
     "twython"
 ]
     
-setup(name='avnio-scoring-autosklearn',
+setup(name='twitter-rumour-dataset',
       version='1.0.0',
       description='Scripts for collecting context based rumour detection dataset from twitter. Uses snscrape',
       url='https://github.com/kshitijgundale/twitter-rumour-dataset',
