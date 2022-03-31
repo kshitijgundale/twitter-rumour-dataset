@@ -24,7 +24,7 @@ def tweet_serializer(tweet):
     tweet_dict['id_str'] = str(tweet.id)
     tweet_dict['in_reply_to_status_id_str'] = str(tweet.inReplyToTweetId) if tweet.inReplyToTweetId else None
     tweet_dict['in_reply_to_user_id_str'] = str(tweet.inReplyToUser.id) if tweet.inReplyToUser else None
-    tweet_dict['is_quote_status'] = tweet.quotedTweet == None
+    tweet_dict['is_quote_status'] = True if quotedTweet else False
     tweet_dict['retweet_count'] = tweet.retweetCount
     tweet_dict['favorite_count'] = tweet.likeCount
     tweet_dict['user'] = user_serializer(tweet.user)

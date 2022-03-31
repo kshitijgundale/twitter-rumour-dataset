@@ -203,14 +203,17 @@ class TweetsScraper():
               self.set_parent(q, i)
               queries.add(q)
             if self.get_related_news_keywords_from_statement:
-              a = Article(i, language="en")
-              a.download()
-              a.parse()
-              title = clean_text(a.title)
-              self.set_parent(title, i)
-              q = self.get_queries_from_statement(title)
-              self.set_parent(q, title)
-              queries.add(q)
+              try:
+                a = Article(i, language="en")
+                a.download()
+                a.parse()
+                title = clean_text(a.title)
+                self.set_parent(title, i)
+                q = self.get_queries_from_statement(title)
+                self.set_parent(q, title)
+                queries.add(q)
+              except ArticleException:
+                continue
 
     return queries
 
@@ -226,9 +229,7 @@ class TweetsScraper():
   def get_base_tweets(self):
     if self.queries is None:
       self.queries = self.get_queries()
-    if len(self.queries) == 0:
-      raise Exception("No queries could be built for this statement")
-
+      
     print(f"Built {len(self.queries)} queries")
 
     for query in self.queries:
