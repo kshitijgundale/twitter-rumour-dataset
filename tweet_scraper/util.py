@@ -30,7 +30,7 @@ def tweet_serializer(tweet):
     tweet_dict['favorite_count'] = tweet.likeCount
     tweet_dict['user'] = user_serializer(tweet.user)
     tweet_dict['entities'] = {
-      'hashtags': tweet.hashtags,
+      'hashtags': tweet.hashtags if tweet.hashtags else [],
       'urls': [{
         'expanded_url': url
       } for url in tweet.outlinks] if tweet.outlinks else [], 
