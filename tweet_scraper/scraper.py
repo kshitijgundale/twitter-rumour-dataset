@@ -4,7 +4,7 @@ import googlesearch
 from googlesearch import search
 import inflect
 from newspaper import Article, ArticleException
-from util import clean_text, user_serializer, tweet_serializer
+from tweet_scraper.util import clean_text, user_serializer, tweet_serializer
 from tqdm import tqdm
 from datetime import datetime, timedelta
 import urllib
