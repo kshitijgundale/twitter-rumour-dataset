@@ -14,6 +14,7 @@ def user_serializer(user):
     user_dict['friends_count'] = user.friendsCount
     user_dict['name'] = user.displayname
     user_dict['screen_name'] = user.username
+    user_dict['verified'] = True if user.verified else False
 
     return user_dict
 
