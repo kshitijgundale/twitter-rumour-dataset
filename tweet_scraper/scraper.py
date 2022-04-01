@@ -107,7 +107,7 @@ class TweetsScraper():
         self.set_parent(s, "statements")
 
         s = clean_text(s)
-        q = self.get_queries_from1_statement(s)
+        q = self.get_queries_from_statement(s)
         queries.add(q)
 
     # Build query from urls
