@@ -74,6 +74,8 @@ class TweetsScraper():
 
     self.parent_dict = {}
     self.tweets = []
+    self.quotes = []
+    self.replies = []
     self.tweet_ids = set()
     self.retweets = {}
 
@@ -221,8 +223,8 @@ class TweetsScraper():
     for i,tweet in enumerate(twitter.TwitterSearchScraper(f'{query} -{self.exclude_keywords} since:{self.since} until:{self.until}').get_items()):
       if i > self.max_tweets:
         break
-      tweet = tweet_serializer(tweet)
-      if tweet["id_str"] not in self.tweet_ids:
+      if str(tweet.id) not in self.tweet_ids:
+        tweet = tweet_serializer(tweet)
         self.tweets.append(tweet)
         self.tweet_ids.add(tweet["id_str"])
 
@@ -245,18 +247,51 @@ class TweetsScraper():
       except TwythonRateLimitError as e:
         time.sleep((int(e.retry_after) - time.time()) + 1)
 
+  def get_quotes(self):
+    for tweet_id in self.tweet_ids:
+      for i,quote in enumerate(twitter.TwitterSearchScraper(f'https://twitter.com/i/web/status/{tweet_id}').get_items()):
+        if str(quote.id) not in self.tweet_ids:
+          quote = tweet_serializer(quote)
+          self.quotes.append(quote)
+
+  def get_replies(self):
+    for tweet_id in self.tweet_ids:
+      for i,reply in enumerate(twitter.TwitterTweetScraper(tweet_id, mode=twitter.TwitterTweetScraperMode.SINGLE).get_items()):
+        if str(reply.id) not in self.tweet_ids:
+          reply = tweet_serializer(reply)
+          self.replies.append(reply)
+
   def get_twitter_data(self):
-    data = {}
+    print("Fetcing tweets")
     self.get_base_tweets()
-    data['tweets'] = self.tweets
+    print(f"Fetched {len(self.tweets)}")
 
     if self.fetch_retweets:
+      print("Fetching Retweets")
+      start = time.perf_counter()
       self.get_retweets()
-      data['retweets'] = self.retweets
+      end = time.perf_counter()
+      print(f"Fetched {len(self.retweets)} in {end-start} seconds")
+
+    if self.fetch_quotes:
+      print("Fetching Quotes")
+      start = time.perf_counter()
+      self.get_quotes()
+      end = time.perf_counter()
+      print(f"Fetched {len(self.quotes)} in {end-start} seconds")
+    
+    if self.fetch_replies:
+      print("Fetching Replies")
+      start = time.perf_counter()
+      self.get_replies()
+      end = time.perf_counter()
+      print(f"Fetched {len(self.replies)} in {end-start} seconds")
 
     return {
       "tweets": self.tweets,
-      "retweets": self.retweets
+      "retweets": self.retweets,
+      "quotes": self.quotes,
+      "replies": self.replies
     }
     
     

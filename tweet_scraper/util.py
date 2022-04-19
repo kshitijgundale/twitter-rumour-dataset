@@ -36,8 +36,8 @@ def tweet_serializer(tweet):
       } for url in tweet.outlinks] if tweet.outlinks else [], 
       'user_mentions': [{
         'id_str': str(tweet.user.id),
-        'name': tweet.user.displayname,
-        'screen_name': tweet.user.username
+        'name': user.displayname,
+        'screen_name': user.username
       } for user in tweet.mentionedUsers] if tweet.mentionedUsers else []
     }
 
