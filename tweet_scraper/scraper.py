@@ -230,12 +230,16 @@ class TweetsScraper():
 
   def get_base_tweets(self):
     if self.queries is None:
+      start = time.perf_counter()
       self.queries = self.get_queries()
-      
-    print(f"Built {len(self.queries)} queries")
+      end = time.perf_counter()
+      print(f"Built {len(self.queries)} queries in {end-start} seconds")
 
+    start = time.perf_counter()
     for query in self.queries:
       self.get_query_tweets(query)
+    end = time.perf_counter()
+    print(f"Built {len(self.tweets)} tweets in {end-start} seconds")
 
   def get_retweets(self):
     tweet_ids = list(self.tweet_ids)
@@ -262,30 +266,28 @@ class TweetsScraper():
           self.replies.append(reply)
 
   def get_twitter_data(self):
-    print("Fetcing tweets")
     self.get_base_tweets()
-    print(f"Fetched {len(self.tweets)}")
 
     if self.fetch_retweets:
       print("Fetching Retweets")
       start = time.perf_counter()
       self.get_retweets()
       end = time.perf_counter()
-      print(f"Fetched {len(self.retweets)} in {end-start} seconds")
+      print(f"Fetched {sum([len(i) for i in self.retweets.values()])} retweets in {end-start} seconds")
 
     if self.fetch_quotes:
       print("Fetching Quotes")
       start = time.perf_counter()
       self.get_quotes()
       end = time.perf_counter()
-      print(f"Fetched {len(self.quotes)} in {end-start} seconds")
+      print(f"Fetched {len(self.quotes)} quotes in {end-start} seconds")
     
     if self.fetch_replies:
       print("Fetching Replies")
       start = time.perf_counter()
       self.get_replies()
       end = time.perf_counter()
-      print(f"Fetched {len(self.replies)} in {end-start} seconds")
+      print(f"Fetched {len(self.replies)} replies in {end-start} seconds")
 
     return {
       "tweets": self.tweets,
