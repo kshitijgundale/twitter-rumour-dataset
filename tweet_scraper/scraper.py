@@ -117,7 +117,7 @@ class TweetsScraper():
     if self.url_search or self.keywords_from_urls or self.get_related_news_keywords_from_urls or self.get_related_news_urls_from_urls:
       for i in self.urls:
 
-        self.parent_dict[i] = "url"
+        self.set_parent(i, "url")
 
         if urllib.parse.urlparse(i).netloc not in self.exclude_urls:
           if self.url_search:
@@ -158,7 +158,7 @@ class TweetsScraper():
       for headline in headlines:
         news_cnt = 0
         for i in search(headline, tld="co.in", num=10, stop=None, pause=2):
-          if news_cnt > self.num_news:
+          if news_cnt == self.num_news:
             break
 
           self.set_parent(i, headline)    
@@ -195,7 +195,7 @@ class TweetsScraper():
         self.set_parent(s, "statements")
         news_cnt = 0
         for i in search(s, tld="co.in", num=10, stop=None, pause=2):
-          if news_cnt > self.num_news:
+          if news_cnt == self.num_news:
             break
           self.set_parent(i, s)
           if urllib.parse.urlparse(i).netloc not in self.exclude_urls:
