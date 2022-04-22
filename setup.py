@@ -5,7 +5,8 @@ REQUIREMENTS = [
     "newspaper3k",
     "snscrape",
     "inflect",
-    "twython"
+    "twython",
+    "dask"
 ]
     
 setup(name='twitter-rumour-dataset',
