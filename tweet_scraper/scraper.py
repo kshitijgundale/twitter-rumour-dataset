@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import List
 from twython import TwythonRateLimitError, Twython
 import time
+import dask
 
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
@@ -219,14 +220,17 @@ class TweetsScraper():
 
     return queries
 
+  @dask.delayed(pure=False)
   def get_query_tweets(self, query):
+    tweets = []
     for i,tweet in enumerate(twitter.TwitterSearchScraper(f'{query} -{self.exclude_keywords} since:{self.since} until:{self.until}').get_items()):
       if i > self.max_tweets:
         break
       if str(tweet.id) not in self.tweet_ids:
         tweet = tweet_serializer(tweet)
-        self.tweets.append(tweet)
-        self.tweet_ids.add(tweet["id_str"])
+        tweets.append(tweet)
+
+    return tweets
 
   def get_base_tweets(self):
     if self.queries is None:
@@ -236,34 +240,78 @@ class TweetsScraper():
       print(f"Built {len(self.queries)} queries in {end-start} seconds")
 
     start = time.perf_counter()
+    all_tweets = []
     for query in self.queries:
-      self.get_query_tweets(query)
+      all_tweets.append(self.get_query_tweets(query))
+    graph = dask.delayed()(all_tweets)
+    all_tweets = graph.compute()
+    for i in all_tweets:
+      for j in i:
+        if j['id_str'] not in self.tweet_ids:
+          self.tweet_ids.add(j['id_str'])
+          self.tweets.append(j)
     end = time.perf_counter()
-    print(f"Built {len(self.tweets)} tweets in {end-start} seconds")
+    print(f"Fetched {len(self.tweets)} tweets in {end-start} seconds")
 
-  def get_retweets(self):
-    tweet_ids = list(self.tweet_ids)
-    ind = 0
-    while ind < len(tweet_ids):
+  @dask.delayed(pure=True)
+  def get_retweets_from_id(self, tweet_id):
+    flag = False
+    while not flag:
       try:
-        self.retweets[tweet_ids[ind]] = self.twython_twitter.get_retweets(id=tweet_ids[ind], count=100)
-        ind += 1
+        retweets = self.twython_twitter.get_retweets(id=tweet_id, count=100)
+        flag = True
       except TwythonRateLimitError as e:
         time.sleep((int(e.retry_after) - time.time()) + 1)
 
-  def get_quotes(self):
+    return retweets
+
+  def get_retweets(self):
+    all_retweets = {}
     for tweet_id in self.tweet_ids:
-      for i,quote in enumerate(twitter.TwitterSearchScraper(f'https://twitter.com/i/web/status/{tweet_id}').get_items()):
-        if str(quote.id) not in self.tweet_ids:
-          quote = tweet_serializer(quote)
-          self.quotes.append(quote)
+      all_retweets[tweet_id] = self.get_retweets_from_id(tweet_id)
+    graph = dask.delayed()(all_retweets)
+    all_retweets = graph.compute()
+    self.retweets = all_retweets
+
+  @dask.delayed(pure=False)
+  def get_quotes_from_id(self, tweet_id):
+    quotes = []
+    for i,quote in enumerate(twitter.TwitterSearchScraper(f'https://twitter.com/i/web/status/{tweet_id}').get_items()):
+      if str(quote.id) not in self.tweet_ids:
+        quote = tweet_serializer(quote)
+        quotes.append(quote)
+    
+    return quotes
+
+  def get_quotes(self):
+    all_quotes = []
+    for tweet_id in self.tweet_ids:
+      all_quotes.append(self.get_quotes_from_id(tweet_id))
+    graph = dask.delayed()(all_quotes)
+    all_quotes = graph.compute()
+    for i in all_quotes:
+      for j in i:
+        self.quotes.append(j)
+
+  @dask.delayed(pure=False)
+  def get_replies_from_id(self, tweet_id):
+    replies = []
+    for i,reply in enumerate(twitter.TwitterTweetScraper(tweet_id, mode=twitter.TwitterTweetScraperMode.SINGLE).get_items()):
+      if str(reply.id) not in self.tweet_ids:
+        reply = tweet_serializer(reply)
+        replies.append(reply)  
+
+    return replies
 
   def get_replies(self):
+    all_replies = []
     for tweet_id in self.tweet_ids:
-      for i,reply in enumerate(twitter.TwitterTweetScraper(tweet_id, mode=twitter.TwitterTweetScraperMode.SINGLE).get_items()):
-        if str(reply.id) not in self.tweet_ids:
-          reply = tweet_serializer(reply)
-          self.replies.append(reply)
+      all_replies.append(self.get_replies_from_id(tweet_id))
+    graph = dask.delayed()(all_replies)
+    all_replies = graph.compute()
+    for i in all_replies:
+      for j in i:
+        self.replies.append(j)
 
   def get_twitter_data(self):
     self.get_base_tweets()
